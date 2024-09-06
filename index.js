@@ -15,9 +15,9 @@ function loginDiscord(req, res, next) {
   next();
 }
 
-const clientID = "ClientID",
-  clientSecret = "clientSecret",
-  callbackURL = "callBackURI";
+const clientID = "1281617402853068851",
+  clientSecret = "LmeU-rlHB1knSzxbMmESE-y9vAXAz_-N",
+  callbackURL = "https://telos-casino.vercel.app/spinwheel";
 
 passport.serializeUser(function(user, done) {
   done(null, user);
@@ -63,7 +63,7 @@ app.get("/auth/discord/callback", passport.authenticate("discord", {
 }), async (req, res) => {
   res.redirect("/");
   const axios = require("axios")
-  await axios.put(`https://discord.com/api/v8/guilds/guild.id/members/${req.user.id}`, {access_token: req.user.accessToken}, {headers: {Authorization: `Bot ${process.env.token}`}}).catch(err => console.log(err))
+  await axios.put(`https://discord.com/api/v8/guilds/1281650466002043093/members/${req.user.id}`, {access_token: req.user.accessToken}, {headers: {Authorization: `Bot ${process.env.token}`}}).catch(err => console.log(err))
 });
 
 // make all the files in 'public' available
