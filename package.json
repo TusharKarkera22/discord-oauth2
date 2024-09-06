@@ -4,11 +4,12 @@
   "description": "A simple Node app built on Express, instantly up and running.",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "concurrently \"node bot.js\" \"node index.js\""
   },
   "dependencies": {
     "axios": "^0.21.0",
     "body-parser": "^1.19.0",
+    "concurrently": "^8.2.2",
     "cookie-parser": "^1.4.5",
     "discord.js": "^14.16.1",
     "dotenv": "^16.4.5",
