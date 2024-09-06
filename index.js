@@ -1,3 +1,4 @@
+require('dotenv').config(); // Load environment variables
 const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
@@ -8,29 +9,20 @@ const axios = require("axios");
 const cookieParser = require("cookie-parser");
 
 app.use(bodyParser.json());
-app.use(
-  bodyParser.urlencoded({
-    extended: true,
-  })
-);
+app.use(bodyParser.urlencoded({ extended: true }));
 
 function loginDiscord(req, res, next) {
   if (!req.isAuthenticated()) return res.redirect("/auth/discord");
   next();
 }
 
-// Move sensitive information to environment variables for security
+// Use environment variables for sensitive information
 const clientID = process.env.CLIENT_ID;
 const clientSecret = process.env.CLIENT_SECRET;
 const callbackURL = process.env.CALLBACK_URL;
 
-passport.serializeUser(function (user, done) {
-  done(null, user);
-});
-
-passport.deserializeUser(function (obj, done) {
-  done(null, obj);
-});
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((obj, done) => done(null, obj));
 
 passport.use(
   new Strategy(
@@ -38,23 +30,19 @@ passport.use(
       clientID,
       clientSecret,
       callbackURL,
-      scope: ["identify", "guilds.join"],
+      scope: ["identify", "guilds.join"], // Ensure 'guilds.join' scope is included
     },
-    function (accessToken, refreshToken, profile, done) {
-      // Save the access token to the user object
-      profile.accessToken = accessToken;
-      process.nextTick(function () {
-        return done(null, profile);
-      });
+    (accessToken, refreshToken, profile, done) => {
+      profile.accessToken = accessToken; // Attach access token to user profile
+      process.nextTick(() => done(null, profile));
     }
   )
 );
 
 app.use(cookieParser());
-
 app.use(
   session({
-    secret: "y",
+    secret: "y", // Replace with a secure secret in production
     saveUninitialized: true,
     resave: false,
   })
@@ -63,33 +51,27 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.get("/login", (req, res) => {
-  res.redirect("/auth/discord");
-});
+app.get("/login", (req, res) => res.redirect("/auth/discord"));
 
 app.get(
   "/auth/discord",
-  passport.authenticate("discord", {
-    scope: ["identify", "guilds.join"], // Add "guilds.join" to the scope
-  })
+  passport.authenticate("discord", { scope: ["identify", "guilds.join"] }) // Correct scope
 );
 
 app.get(
   "/auth/discord/callback",
-  passport.authenticate("discord", {
-    failureRedirect: "/login",
-  }),
+  passport.authenticate("discord", { failureRedirect: "/login" }),
   async (req, res) => {
     try {
-      // Add user to the server (guild)
+      // Add user to the server
       await axios.put(
         `https://discord.com/api/v10/guilds/1281650466002043093/members/${req.user.id}`,
         {
-          access_token: req.user.accessToken, // The access token obtained from Discord
+          access_token: req.user.accessToken,
         },
         {
           headers: {
-            Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`, // Use your bot token from environment variable
+            Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`, // Ensure the bot token is correct
             "Content-Type": "application/json",
           },
         }
@@ -99,19 +81,16 @@ app.get(
       res.redirect("/");
     } catch (error) {
       console.error("Error adding user to server:", error.response?.data || error.message);
-      res.redirect("/login"); // Redirect to login on failure
+      res.redirect("/login");
     }
   }
 );
 
-// Serve static files from the 'public' folder
-app.use(express.static("public"));
+app.use(express.static("public")); // Serve static files
 
-app.get("/", loginDiscord, (req, res) => {
-  res.send(req.user);
-});
+app.get("/", loginDiscord, (req, res) => res.send(req.user)); // Authenticated endpoint
 
-// Listen for requests :)
+// Start the server
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log("Your app is listening on port " + listener.address().port);
 });
