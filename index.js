@@ -1,4 +1,8 @@
-require('dotenv').config(); // Load environment variables
+// Import and start the bot
+require('./bot');
+
+// Your existing code
+require('dotenv').config();
 const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
@@ -16,10 +20,11 @@ function loginDiscord(req, res, next) {
   next();
 }
 
-// Use environment variables for sensitive information
 const clientID = process.env.CLIENT_ID;
 const clientSecret = process.env.CLIENT_SECRET;
 const callbackURL = process.env.CALLBACK_URL;
+const botToken = process.env.DISCORD_BOT_TOKEN;
+const guildID = "1281650466002043093";
 
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
@@ -30,10 +35,10 @@ passport.use(
       clientID,
       clientSecret,
       callbackURL,
-      scope: ["identify", "guilds.join"], // Ensure 'guilds.join' scope is included
+      scope: ["identify", "guilds.join"],
     },
     (accessToken, refreshToken, profile, done) => {
-      profile.accessToken = accessToken; // Attach access token to user profile
+      profile.accessToken = accessToken;
       process.nextTick(() => done(null, profile));
     }
   )
@@ -42,7 +47,7 @@ passport.use(
 app.use(cookieParser());
 app.use(
   session({
-    secret: "y", // Replace with a secure secret in production
+    secret: "y",
     saveUninitialized: true,
     resave: false,
   })
@@ -55,7 +60,7 @@ app.get("/login", (req, res) => res.redirect("/auth/discord"));
 
 app.get(
   "/auth/discord",
-  passport.authenticate("discord", { scope: ["identify", "guilds.join"] }) // Correct scope
+  passport.authenticate("discord", { scope: ["identify", "guilds.join"] })
 );
 
 app.get(
@@ -63,34 +68,34 @@ app.get(
   passport.authenticate("discord", { failureRedirect: "/login" }),
   async (req, res) => {
     try {
-      // Add user to the server
-      await axios.put(
-        `https://discord.com/api/v10/guilds/1281650466002043093/members/${req.user.id}`,
+      const response = await axios.put(
+        `https://discord.com/api/v10/guilds/${guildID}/members/${req.user.id}`,
         {
           access_token: req.user.accessToken,
         },
         {
           headers: {
-            Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`, // Ensure the bot token is correct
+            Authorization: `Bot ${botToken}`,
             "Content-Type": "application/json",
           },
         }
       );
 
-      // Redirect user after successful join
+      console.log("User successfully added to the guild:", response.data);
       res.redirect("/");
     } catch (error) {
-      console.error("Error adding user to server:", error.response || error.message);
+      console.error("Error adding user to server:", error.response|| error.message);
       res.redirect("/login");
     }
   }
 );
 
-app.use(express.static("public")); // Serve static files
+app.use(express.static("public"));
 
-app.get("/", loginDiscord, (req, res) => res.send(req.user)); // Authenticated endpoint
+app.get("/", loginDiscord, (req, res) => {
+  res.send(`Hello, ${req.user.username}! You are now part of the guild.`);
+});
 
-// Start the server
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log("Your app is listening on port " + listener.address().port);
 });
