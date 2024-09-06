@@ -80,7 +80,7 @@ app.get(
       // Redirect user after successful join
       res.redirect("/");
     } catch (error) {
-      console.error("Error adding user to server:", error.response?.data || error.message);
+      console.error("Error adding user to server:", error.response || error.message);
       res.redirect("/login");
     }
   }
